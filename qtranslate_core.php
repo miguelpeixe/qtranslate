@@ -628,12 +628,13 @@ function qtrans_disableLanguage($lang) {
 	if(qtrans_isEnabled($lang)) {
 		$new_enabled = array();
 		for($i = 0; $i < sizeof($q_config['enabled_languages']); $i++) {
-			if($q_config['enabled_languages'][$i] != $_GET['delete']) {
+			if($q_config['enabled_languages'][$i] != $lang) {
 				$new_enabled[] = $q_config['enabled_languages'][$i];
 			}
 		}
 		$q_config['enabled_languages'] = $new_enabled;
-        sort($q_config['enabled_languages']);
+		sort($q_config['enabled_languages']);
+		update_option('qtranslate_enabled_languages',$q_config['enabled_languages']);
 		return true;
 	}
 	return false;
@@ -645,7 +646,8 @@ function qtrans_enableLanguage($lang) {
 		return false;
 	}
 	$q_config['enabled_languages'][] = $lang;
-    sort($q_config['enabled_languages']);
+	sort($q_config['enabled_languages']);
+	update_option('qtranslate_enabled_languages',$q_config['enabled_languages']);
 	return true;
 }
 
