@@ -109,6 +109,11 @@ class Language {
 	 */
 	var $locale;
 	/**
+	 * Windows Locale (usually full language name)
+	 * (example: English)
+	 */
+	var $windowsLocale;
+	/**
 	 * Not Available Message
 	 * %LANG:<normal_seperator>:<last_seperator>% generates a list of languages
 	 * seperated by <normal_seperator> except for the last one, where <last_seperator>
@@ -154,7 +159,7 @@ class Language {
 	 * @param string $flag
 	 * @param string $domain [optional]
 	 */
-	function __construct($code, $name, $locale, $naMessage, $dateFormat, $timeFormat, $flag, $direction = 'ltr', $domain = '') {
+	function __construct($code, $name, $locale, $naMessage, $dateFormat, $timeFormat, $flag, $direction = 'ltr', $domain = '', $windowsLocale = '') {
 		if ($direction != 'rtl')
 			$direction = 'ltr';
 		$this->code = $code;
@@ -166,6 +171,7 @@ class Language {
 		$this->flag = $flag;
 		$this->direction = $direction;
 		$this->domain = $domain;
+		$this->windowsLocale = empty($windowsLocale) ? $name : $windowsLocale;
 	}
 
 	/**
@@ -225,8 +231,11 @@ class qTranslate {
 		} else {
 			// Non admin filters
 			add_filter('request', array($this, 'fixRequestFilter'), 0, 1);
+			add_filter('option_date_format', array($this, 'currentDateFormat'));
+			add_filter('option_time_format', array($this, 'currentTimeFormat'));
 			add_action('init', array($this, 'setupPostTypeAction'));
 		}
+		add_filter('date_i18n', array($this, 'formatTimeFilter'), 0, 4);
 		do_action_ref_array('qtranslate_init', array(&$this));
 	}
 
@@ -403,11 +412,13 @@ class qTranslate {
 		$wp_locale->text_direction = $this->languages[$this->language]->direction;
 		// set locale so strftime works correctly
 		$localelist = array(
-			$this->languages[$this->language]->locale.'.utf8',
-			$this->languages[$this->language]->locale.'@euro',
+			$this->languages[$this->language]->locale . '.utf8',
+			$this->languages[$this->language]->locale . '@euro',
 			$this->languages[$this->language]->locale,
-			substr($this->language,0,2)
+			substr($this->language, 0, 2),
+			$this->languages[$this->language]->windowsLocale
 		);
+		setlocale(LC_TIME, $localelist);
 	}
 
 	/**
@@ -441,7 +452,7 @@ class qTranslate {
 	}
 
 	/**
-	 * Detects strftime formats
+	 * Detects strftime formats by looking for % without prepending \
 	 * @static
 	 * @param string $format
 	 * @return bool  true if format is a strftime format
@@ -451,7 +462,23 @@ class qTranslate {
 	}
 
 	/**
-	 * Format the date according to current language with current format
+	 * Returns the current date format
+	 * @return string  current date format
+	 */
+	function currentDateFormat() {
+		return $this->languages[$this->language]->dateFormat;
+	}
+
+	/**
+	 * Returns the current time format
+	 * @return string  current time format
+	 */
+	function currentTimeFormat() {
+		return $this->languages[$this->language]->timeFormat;
+	}
+
+	/**
+	 * Format the datetime according to current language with current format
 	 * @param string $old_date
 	 * @param string $format
 	 * @param string $time
