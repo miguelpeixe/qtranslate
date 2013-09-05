@@ -284,7 +284,7 @@ function qtrans_initJS() {
 		qtrans_hook_on_tinyMCE = function(id) {
 			tinyMCEPreInit.mceInit[id].setup = function(ed) {
 				ed.onSaveContent.add(function(ed, o) {
-					if (!ed.isHidden())  {
+					if (!ed.isHidden() && ed.editorId.match(/^qtrans_/))  {
 						qtrans_save(switchEditors.pre_wpautop(o.content));
 					}
 				});
